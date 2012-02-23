@@ -1,0 +1,110 @@
+sfJqueryFormValidation plugin
+==============
+
+The `sfJqueryFormValidationPlugin` is a Symfony plugin that automatically adds client-side 
+form validation to Symfony Forms (including embedded forms).
+
+The client side validation is performed using the jQuery library and the jQuery Validation plugin.
+
+It automatically reads validation rules and messages in from the form validation schema and applies them 
+on the client side.
+
+The validation is added using progressive-enhancement techniques, so no javascript code is actually 
+written to your HTML page.
+
+The error messages are written to the page using the same HTML elements as the server-side validation 
+so you only need one set of styling rules to cover the server and client side validation messages.
+
+Installation
+------------
+
+  * Add the jQuery libary and the jQuery Validation plugin on your site in `view.yml`. You can either download them from 
+  http://docs.jquery.com/Downloading_jQuery and http://bassistance.de/jquery-plugins/jquery-plugin-validation/ respectively. Alternatively
+  you can just include them from their respective CDN's:
+   
+        [yml]
+        default:
+          javascripts:    [http://ajax.googleapis.com/ajax/libs/jquery/1.4/jquery.min.js,http://ajax.microsoft.com/ajax/jquery.validate/1.7/jquery.validate.min.js]
+
+  * Install the plugin
+
+        $ symfony plugin:install sfJqueryFormValidationPlugin
+        
+  * Add the following filter to `filters.yml` below the "# insert your own filters here" comment:
+
+        [yml]
+        # insert your own filters here
+        jquery_form_validation:
+          class: sfJqueryFormValidationFilter
+
+  * Enable module in your `settings.yml`:
+
+        [yml]
+        all:
+          .settings:
+            enabled_modules:      [default, sfJqueryFormVal]
+        
+  * Clear your cache
+
+        $ symfony cc
+
+
+Optional configuration settings
+-----------------------
+
+  * There are a couple of extra configuration options that can optionally be added
+  to `app.yml` to change the behavior of plugin:
+
+        [yml]
+        all:
+          sf_jquery_form_validation:
+            default: disabled
+            forms: [RegistrationForm, Login]
+            date_method: dateEN
+            
+  * The default behavior of the plugin is to add client-side validation to all Symfony forms. If you 
+  wish to manually select which forms get the client-side validation, you can set default:disabled, which 
+  prevents the plugin from validating forms by default and then specify the desired forms to receive validation
+  in the forms: option.
+  
+  * The date-validation method (date) in the jQuery form validation plugin checks for US style dates, you can
+  optionally specify an alternate method for checking dates. In the example above, the date method is changed
+  to dateEN (which then needs to be defined). The example definition for dateEN is shown below.
+
+Custom date validation method - dateEN
+-----------------------
+
+  * The jQuery form validation plugin allows you to define custom validation methods. This is a custom method
+  for validating dates as dd-mm-yyyy. It can be added to the same js file as the the form validation 
+  plugin or just added somewhere in a js file that is included on pages that contain forms.
+  
+        [js]
+				jQuery.validator.addMethod(
+					"dateEN",
+					function(value, element) {
+						var check = false;
+						var re = /^\d{2}\-\d{2}\-\d{4}$/
+						if( re.test(value)){
+							var adata = value.split('-');
+							var gg = parseInt(adata[0],10);
+							var mm = parseInt(adata[1],10);
+							var aaaa = parseInt(adata[2],10);
+							var xdata = new Date(aaaa,mm-1,gg);
+							if ( ( xdata.getFullYear() == aaaa ) && ( xdata.getMonth () == mm - 1 ) && ( xdata.getDate() == gg ) )
+								check = true;
+							else
+								check = false;
+						} else
+							check = false;
+						return this.optional(element) || check;
+					}, 
+					"Please enter a correct date"
+				);
+
+TODO
+----
+
+  * Add support for sfValidatorAnd and sfValidatorOr
+  * Add smart validation for Doctrine and Propel Choice Widgets
+  * Add support for sfValidatorBoolean
+
