@@ -215,8 +215,8 @@ class sfJqueryFormValidationRules
           $this->addRule($validationName, $option, $value);
           break;
 
-        case '':
-          break;
+//        case '':
+//          break;
       }
     }
 
