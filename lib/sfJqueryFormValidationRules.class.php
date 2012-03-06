@@ -74,6 +74,8 @@ class sfJqueryFormValidationRules
 
   public function __construct(sfForm $form)
   {
+    sfContext::getInstance()->getConfiguration()->loadHelpers('I18N');
+
     // if an alternative date method has been specified, update the static widget array
     if(strlen(sfConfig::get('app_sf_jquery_form_validation_date_method')) > 0)
     {
@@ -255,17 +257,17 @@ class sfJqueryFormValidationRules
     }
   }
 
-  private function processMessages($validationName, sfValidatorBase $objField)
+  private function processMessages($validationName, sfValidatorBase $objValidator)
   {
-    foreach ($objField->getOptions() as $key => $val)
+    foreach ($objValidator->getOptions() as $key => $val)
     {
-      $this->addMessage($validationName, $this->outputMessageKey($key, $objField), $this->parseMessageVal($key, $objField));
+      $this->addMessage($validationName, $this->outputMessageKey($key, $objValidator), $this->parseMessageVal($key, $objValidator));
     }
   }
 
-  private function parseMessageKey($key, sfValidatorBase $objField)
+  private function parseMessageKey($key, sfValidatorBase $objValidator)
   {
-    $class = get_class($objField);
+    $class = get_class($objValidator);
     if (isset(self::$widgets[$class]['keymap'][$key]))
     {
       $key = self::$widgets[$class]['keymap'][$key];
@@ -295,11 +297,11 @@ class sfJqueryFormValidationRules
    * Parse message value
    *
    * @param string $key
-   * @param sfValidatorBase $objField
+   * @param sfValidatorBase $objValidator
    *
    * @return string
    */
-  private function parseMessageVal($key, sfValidatorBase $objField)
+  private function parseMessageVal($key, sfValidatorBase $objValidator)
   {
 //    if ($objField instanceof sfValidatorSchema)
 //    {
@@ -311,18 +313,18 @@ class sfJqueryFormValidationRules
 //      return $retrunVal;
 //    }
 
-    $field_options = $objField->getOptions();
-    $messages = $objField->getMessages();
-    $val = "";
+    $validatorOptions = $objValidator->getOptions();
+    $messages = $objValidator->getMessages();
+    $val = '';
 
     // if the field options for this item is empty, don't include it
-    if (!isset($field_options[$key]) || false === $field_options[$key])
+    if (!isset($validatorOptions[$key]) || false === $validatorOptions[$key])
     {
       return '';
     }
 //    var_dump(get_class($objField));
 //    var_dump($field_options);
-    if (is_array($field_options[$key]))
+    if (is_array($validatorOptions[$key]))
     {
       // TODO sfValidatorBoolean
       // TODO sfValidatorChoice
@@ -333,16 +335,16 @@ class sfJqueryFormValidationRules
 //          var_dump($val);die('OK');
 //        }
 //      }
-      return "";
+      return '';
     }
 
-    if (!(isset($messages[$key]) || isset($messages[$this->parseMessageKey($key, $objField)])))
+    if (!(isset($messages[$key]) || isset($messages[$this->parseMessageKey($key, $objValidator)])))
     {
-      return "";
+      return '';
     }
 
     // find the actual error message
-    $mapped_key = $this->parseMessageKey($key, $objField);
+    $mapped_key = $this->parseMessageKey($key, $objValidator);
     if (isset($messages[$key]))
     {
       $val = $messages[$key];
@@ -353,8 +355,11 @@ class sfJqueryFormValidationRules
     }
     else
     {
-      return;
+      return '';
     }
+
+    $val = $this->form->getWidgetSchema()->getFormFormatter()
+      ->translate($val, $this->procentizeValidatorKeys($validatorOptions));
 
     // add slashes to ensure correct json output
     $val = addslashes($val);
@@ -365,15 +370,22 @@ class sfJqueryFormValidationRules
     {
       $val = '[[{ return \'' . str_replace('%value%', "' + $(elem).val() + '", $val) . '\';}]]';
     }
-    if (strpos($val, '%min_length%') !== false)
-    {
-      $val = str_replace('%min_length%', $field_options['min_length'], $val);
-    }
-    if (strpos($val, '%max_length%') !== false)
-    {
-      $val = str_replace('%max_length%', $field_options['max_length'], $val);
-    }
+
     return $val;
+  }
+
+  private function procentizeValidatorKeys($options)
+  {
+    $validatorOptions = array();
+    foreach ($options as $key => $option)
+    {
+      if (is_array($option))
+      {
+        $option = $this->procentizeValidatorKeys($option);
+      }
+      $validatorOptions[is_numeric($key) ? $key : '%' . $key . '%'] = $option;
+    }
+    return $validatorOptions;
   }
 
   private function addRule($validation_name, $rule, $value)
@@ -385,7 +397,7 @@ class sfJqueryFormValidationRules
   {
     if (strlen($value) > 0)
     {
-      $this->messages[$validation_name][$rule] = $value;
+      $this->messages[$validation_name][$rule] = __($value);
     }
   }
 
