@@ -52,7 +52,7 @@ class sfJqueryFormValidationRules
     'sfValidatorInteger' => array(
       'rules' => array('digits' => true),
       'keymap' =>  array('pattern' => 'invalid'),
-      'msgmap' =>  array('pattern' => 'digits'),
+      'msgmap' =>  array('pattern' => 'digits', 'invalid' => 'digits'),
     ),
 
     'sfValidatorDate' => array(
@@ -87,35 +87,6 @@ class sfJqueryFormValidationRules
     $this->form = $form;
     $this->formName = $form->getName();
     $this->processValidationRules($this->formName, $form->getValidatorSchema());
-  }
-
-  /**
-   * @param sfForm $form
-   * @param sfJqueryFormValidationRules $sfJqueryRules
-   * @param string $parentName
-   */
-  protected function addEmbeddedForms(sfForm $form, $parentName = false)
-  {
-    foreach ($form->getEmbeddedForms() as $name => $embeddedForm)
-    {
-      $name = false !== $parentName
-        ? $parentName . '][' . $name
-        : $name;
-      if ('sfForm' == get_class($embeddedForm) && count($form->getEmbeddedForms()))
-      {
-        $this->addEmbeddedForms($embeddedForm, $name);
-      }
-      else
-      {
-        $this->addEmbeddedForm($name, $embeddedForm);
-      }
-    }
-  }
-
-  public function addEmbeddedForm($name, sfForm $form)
-  {
-//    $this->processValidationRules($name, $form, true);
-    $this->forms[] = $form;
   }
 
   public function generateRules()
@@ -191,6 +162,37 @@ class sfJqueryFormValidationRules
   {
     $fieldOptions = $objField->getOptions();
 
+    // now add widget specific rules
+    foreach (self::$widgets as $widgetName => $properties)
+    {
+      if ($widgetName == get_class($objField))
+      {
+        foreach ($properties['rules'] as $key => $val)
+        {
+          // if there's a dynamic placehold in the value, do a replace for the real value
+          if (preg_match('/%(.*)%/', $val, $matches) > 0)
+          {
+            // remove the slash because it breaks the javascript regex syntax
+            // (hopefully removing the slash doesn't break anything else in the future)
+            $val = str_replace('/', '', $fieldOptions[$matches[1]]);
+          }
+
+           // if there is value replacements for this field, action them now
+          $originalKey = $this->getOriginalFieldKey($widgetName, $key) ?: $key;
+
+          if (isset($fieldOptions[$originalKey]))
+          {
+            if (isset($properties['valmap'][$originalKey][$fieldOptions[$originalKey]]))
+            {
+              $val = $properties['valmap']['mime_types'][$fieldOptions[$originalKey]];
+            }
+          }
+          // add the validation rule
+          $this->addRule($validationName, $key, $val);
+        }
+      }
+    }
+
     foreach ($fieldOptions as $option => $value)
     {
       if (null === $value)
@@ -224,42 +226,11 @@ class sfJqueryFormValidationRules
 
     // TODO - add support for sfValidatorAnd and sfValidatorOr
     //if(get_class($objField) == 'sfValidatorAnd');
-
-    // now add widget specific rules
-    foreach (self::$widgets as $widgetName => $properties)
-    {
-      if ($widgetName == get_class($objField))
-      {
-        foreach ($properties['rules'] as $key => $val)
-        {
-          // if there's a dynamic placehold in the value, do a replace for the real value
-          if (preg_match('/%(.*)%/', $val, $matches) > 0)
-          {
-            // remove the slash because it breaks the javascript regex syntax
-            // (hopefully removing the slash doesn't break anything else in the future)
-            $val = str_replace('/', '', $fieldOptions[$matches[1]]);
-          }
-
-           // if there is value replacements for this field, action them now
-          $originalKey = $this->getOriginalFieldKey($widgetName, $key) ?: $key;
-
-          if (isset($fieldOptions[$originalKey]))
-          {
-            if (isset($properties['valmap'][$originalKey][$fieldOptions[$originalKey]]))
-            {
-              $val = $properties['valmap']['mime_types'][$fieldOptions[$originalKey]];
-            }
-          }
-          // add the validation rule
-          $this->addRule($validationName, $key, $val);
-        }
-      }
-    }
   }
 
   private function processMessages($validationName, sfValidatorBase $objValidator)
   {
-    foreach ($objValidator->getOptions() as $key => $val)
+    foreach ($objValidator->getMessages() as $key => $val)
     {
       $this->addMessage($validationName, $this->outputMessageKey($key, $objValidator), $this->parseMessageVal($key, $objValidator));
     }
@@ -303,55 +274,43 @@ class sfJqueryFormValidationRules
    */
   private function parseMessageVal($key, sfValidatorBase $objValidator)
   {
-//    if ($objField instanceof sfValidatorSchema)
-//    {
-//      $retrunVal = '';
-//      foreach ($objField->getFields() as $subKey => $subObjField)
-//      {
-//        $retrunVal .= $this->parseMessageVal($subKey, $subObjField);
-//      }
-//      return $retrunVal;
-//    }
-
     $validatorOptions = $objValidator->getOptions();
     $messages = $objValidator->getMessages();
-    $val = '';
 
-    // if the field options for this item is empty, don't include it
-    if (!isset($validatorOptions[$key]) || false === $validatorOptions[$key])
+    switch (get_class($objValidator))
     {
-      return '';
-    }
-//    var_dump(get_class($objField));
-//    var_dump($field_options);
-    if (is_array($validatorOptions[$key]))
-    {
-      // TODO sfValidatorBoolean
-      // TODO sfValidatorChoice
-//      foreach ($field_options[$key] as $key => $val) {
-//        if (empty($val)) {
-//          continue;
-//        } else {
-//          var_dump($val);die('OK');
-//        }
-//      }
-      return '';
-    }
+//      case 'sfValidatorBoolean';// TODO
+//      case 'sfValidatorChoice';// TODO
+      case 'sfValidatorInteger':
+        if ('invalid' == $key)
+        {
+          $messages['digits'] = $messages['invalid'];
+          $key = 'digits';
+        }
+        break;
 
-    if (!(isset($messages[$key]) || isset($messages[$this->parseMessageKey($key, $objValidator)])))
-    {
-      return '';
+      default:
+        // if the field options for this item is empty, don't include it
+        if (!isset($validatorOptions[$key]) || false === $validatorOptions[$key])
+        {
+          return '';
+        }
     }
 
     // find the actual error message
-    $mapped_key = $this->parseMessageKey($key, $objValidator);
+    $mappedKey = $this->parseMessageKey($key, $objValidator);
+    if (!(isset($messages[$key]) || isset($messages[$mappedKey])))
+    {
+      return '';
+    }
+
     if (isset($messages[$key]))
     {
       $val = $messages[$key];
     }
-    elseif (isset($messages[$mapped_key]))
+    elseif (isset($messages[$mappedKey]))
     {
-      $val = $messages[$mapped_key];
+      $val = $messages[$mappedKey];
     }
     else
     {
@@ -374,6 +333,12 @@ class sfJqueryFormValidationRules
     return $val;
   }
 
+  /**
+   * Wrap the key with percent signs (%)
+   *
+   * @param $options
+   * @return array
+   */
   private function procentizeValidatorKeys($options)
   {
     $validatorOptions = array();
