@@ -40,7 +40,7 @@ class sfJqueryFormValidationRules
     'sfValidatorRegex' => array(
       'rules' => array('regex' => '%pattern%'),
       'keymap' =>  array('pattern' => 'invalid'),
-      'msgmap' =>  array('pattern' => 'regex'),
+      'msgmap' =>  array('pattern' => 'regex', 'invalid' => 'regex'),
     ),
 
     'sfValidatorUrl' => array(
@@ -53,6 +53,12 @@ class sfJqueryFormValidationRules
       'rules' => array('digits' => true),
       'keymap' =>  array('pattern' => 'invalid'),
       'msgmap' =>  array('pattern' => 'digits', 'invalid' => 'digits'),
+    ),
+
+    'sfValidatorNumber' => array(
+      'rules' => array('number' => true),
+      'keymap' =>  array('pattern' => 'invalid'),
+      'msgmap' =>  array('pattern' => 'number', 'invalid' => 'number'),
     ),
 
     'sfValidatorDate' => array(
@@ -77,7 +83,7 @@ class sfJqueryFormValidationRules
     sfContext::getInstance()->getConfiguration()->loadHelpers('I18N');
 
     // if an alternative date method has been specified, update the static widget array
-    if(strlen(sfConfig::get('app_sf_jquery_form_validation_date_method')) > 0)
+    if (strlen(sfConfig::get('app_sf_jquery_form_validation_date_method')) > 0)
     {
       self::$widgets['sfValidatorDate']['rules'] = array(sfConfig::get('app_sf_jquery_form_validation_date_method') => true);
       self::$widgets['sfValidatorDate']['keymap'] = array('date_format' => 'bad_format');
@@ -286,6 +292,22 @@ class sfJqueryFormValidationRules
         {
           $messages['digits'] = $messages['invalid'];
           $key = 'digits';
+        }
+        break;
+
+      case 'sfValidatorNumber':
+        if ('invalid' == $key)
+        {
+          $messages['number'] = $messages['invalid'];
+          $key = 'number';
+        }
+        break;
+
+      case 'sfValidatorRegex':
+        if ('invalid' == $key)
+        {
+          $messages['regex'] = $messages['invalid'];
+          $key = 'regex';
         }
         break;
 
