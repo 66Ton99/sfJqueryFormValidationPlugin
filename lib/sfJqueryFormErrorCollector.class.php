@@ -43,7 +43,8 @@ class sfJqueryFormErrorCollector
   {
     if (null === $this->errors)
     {
-      $this->collectErrors($this->getFormName($formName));
+      $formName = $this->getFormName($formName);
+      $this->collectErrors($formName);
     }
 
     return $this->errors;
@@ -88,14 +89,15 @@ class sfJqueryFormErrorCollector
     foreach ($errorSchema as $key => $error)
     {
       /** @var $error sfValidatorError */
-      $errorKey = $name . '_' . $key;
+//      $errorKey = $name . '_' . $key;
+      $errorField = $name . '[' . $key . ']';
       if ($error instanceof sfValidatorErrorSchema)
       {
-        $this->collectErrors($errorKey, $error);
+        $this->collectErrors($errorField, $error);
       }
       else
       {
-        $this->errors[$errorKey] = $this->form->getWidgetSchema()->getFormFormatter()
+        $this->errors[$errorField] = $this->form->getWidgetSchema()->getFormFormatter()
           ->translate($error->getMessage(), $error->getArguments());
       }
     }
