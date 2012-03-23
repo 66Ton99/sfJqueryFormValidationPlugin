@@ -23,7 +23,7 @@ class sfJqueryFormValidationRules
     'sfValidatorEmail' => array(
       'rules' => array('email' => true),
       'keymap' =>  array('pattern' => 'invalid'),
-      'msgmap' =>  array('pattern' => 'email'),
+      'msgmap' =>  array('pattern' => 'email', 'invalid' => 'email'),
     ),
 
     'sfValidatorFile' => array(
@@ -46,7 +46,7 @@ class sfJqueryFormValidationRules
     'sfValidatorUrl' => array(
       'rules' => array('url' => true),
       'keymap' =>  array('pattern' => 'invalid'),
-      'msgmap' =>  array('pattern' => 'url'),
+      'msgmap' =>  array('pattern' => 'url', 'invalid' => 'url'),
     ),
 
     'sfValidatorInteger' => array(
@@ -64,7 +64,7 @@ class sfJqueryFormValidationRules
     'sfValidatorDate' => array(
       'rules' => array('date' => true),
       'keymap' =>  array('date_format' => 'bad_format'),
-      'msgmap' =>  array('date_format' => 'date'),
+      'msgmap' =>  array('date_format' => 'date', 'invalid' => 'date'),
     )
   );
 
@@ -308,6 +308,30 @@ class sfJqueryFormValidationRules
         {
           $messages['regex'] = $messages['invalid'];
           $key = 'regex';
+        }
+        break;
+
+      case 'sfValidatorUrl':
+        if ('invalid' == $key)
+        {
+          $messages['url'] = $messages['invalid'];
+          $key = 'url';
+        }
+        break;
+
+      case 'sfValidatorDate':
+        if ('invalid' == $key)
+        {
+          $messages['date'] = $messages['invalid'];
+          $key = 'date';
+        }
+        break;
+
+      case 'sfValidatorEmail':
+        if ('invalid' == $key)
+        {
+          $messages['email'] = $messages['invalid'];
+          $key = 'email';
         }
         break;
 
