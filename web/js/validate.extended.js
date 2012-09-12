@@ -1,7 +1,7 @@
 /**
  * Extension for jQuery.Validate plugin
  *
- * @package    LeftCo
+ * @package    sfJqueryFormValidationPlugin
  * @subpackage JS
  * @author     Alexandr Shuboff <a.shuboff@gmail.com>
  */

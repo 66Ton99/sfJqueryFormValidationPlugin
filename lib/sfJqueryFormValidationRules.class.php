@@ -1,5 +1,9 @@
 <?php
 
+/**
+ * @package    sfJqueryFormValidationPlugin
+ * @subpackage lib
+ */
 class sfJqueryFormValidationRules
 {
   private $forms = array();
@@ -13,11 +17,6 @@ class sfJqueryFormValidationRules
   private $formName = null;
 
   private $postValidators = array();
-
-  private static $urlParams = array(
-    'module' => 'sfJqueryFormVal',
-    'action' => 'index'
-  );
 
   private static $widgets = array(
     'sfValidatorEmail' => array(
@@ -73,11 +72,6 @@ class sfJqueryFormValidationRules
      'max_length' => 'maxlength',
   );
 
-  public static function getUrlParams()
-  {
-    return self::$urlParams;
-  }
-
   public function __construct(sfForm $form)
   {
     sfContext::getInstance()->getConfiguration()->loadHelpers('I18N');
@@ -95,11 +89,21 @@ class sfJqueryFormValidationRules
     $this->processValidationRules($this->formName, $form->getValidatorSchema());
   }
 
+  /**
+   * Renders rules
+   *
+   * @return string
+   */
   public function generateRules()
   {
     return sizeof($this->rules) > 0 ? json_encode($this->rules) : '{}';
   }
 
+  /**
+   * Renders messages
+   *
+   * @return mixed
+   */
   public function generateMessages()
   {
     $message = sizeof($this->messages) > 0 ? json_encode($this->messages) : '{}';
@@ -109,6 +113,8 @@ class sfJqueryFormValidationRules
     $message = str_replace(']]"', '', $message);
     $message = str_replace('\" +', '" +', $message);
     $message = str_replace(' + \"', ' + "', $message);
+    $message = str_replace('\\\\', '\\', $message);
+    $message = str_replace('\\"', '"', $message);
     return $message;
   }
 
@@ -399,40 +405,40 @@ class sfJqueryFormValidationRules
     return $validatorOptions;
   }
 
-  private function addRule($validation_name, $rule, $value)
+  private function addRule($validationName, $rule, $value)
   {
-    $this->rules[$validation_name][$rule] = $value;
+    $this->rules[$validationName][$rule] = $value;
   }
 
-  private function addMessage($validation_name, $rule, $value)
+  private function addMessage($validationName, $rule, $value)
   {
     if (strlen($value) > 0)
     {
-      $this->messages[$validation_name][$rule] = __($value);
+      $this->messages[$validationName][$rule] = __($value);
     }
   }
 
   private function createValidationName($form_name, $fieldname, $is_embedded)
   {
-    $field_html_name_prefix = $is_embedded ? $this->formName . '[' . $form_name . ']' : $form_name;
-    $field_html_id_prefix = $is_embedded ? $this->formName . '_' . $form_name : $form_name;
+    $fieldHtmlNamePrefix = $is_embedded ? $this->formName . '[' . $form_name . ']' : $form_name;
+    $fieldHtmlIdPrefix = $is_embedded ? $this->formName . '_' . $form_name : $form_name;
 
     if (strlen($form_name) > 0)
     {
-      $validation_name = $field_html_name_prefix . '[' . $fieldname . ']';
-      $field_html_id = $field_html_id_prefix . '_' . $fieldname;
+      $validationName = $fieldHtmlNamePrefix . '[' . $fieldname . ']';
+      $fieldHtmlId = $fieldHtmlIdPrefix . '_' . $fieldname;
     }
     else
     {
-      $validation_name = ($is_embedded ? '_' . $this->formName : '') . $fieldname;
-      $field_html_id = ($is_embedded ? $this->formName . '_' : '') . $fieldname;
+      $validationName = ($is_embedded ? '_' . $this->formName : '') . $fieldname;
+      $fieldHtmlId = ($is_embedded ? $this->formName . '_' : '') . $fieldname;
     }
 
     if ($this->firstFieldId == null)
     {
-      $this->firstFieldId = $field_html_id;
+      $this->firstFieldId = $fieldHtmlId;
     }
-    return $validation_name;
+    return $validationName;
   }
 
   public function getPostValidators($form = null, $isRecursion = false)
@@ -483,9 +489,8 @@ class sfJqueryFormValidationRules
       case 'sfValidatorPropelUnique':
         $return = array();
         foreach ($options['column'] as $column) {
-          extract(sfJqueryFormValidationRules::getUrlParams());
           $rules['remote'] = sfContext::getInstance()->getController()->genUrl(
-            "{$module}/remote?form=" . get_class($form) . "&validator={$validatorName}");
+            "@sf_jquery_form_remote?form=" . get_class($form) . "&validator={$validatorName}");
           $rules['messages'] = array(
             'remote' => $messages['invalid'],
           );
@@ -510,11 +515,11 @@ class sfJqueryFormValidationRules
   {
     if ($keymap = self::$widgets[$widget_name]['keymap'])
     {
-      foreach (self::$widgets[$widget_name]['keymap'] as $orig_key => $val)
+      foreach (self::$widgets[$widget_name]['keymap'] as $origKey => $val)
       {
         if ($key == $val)
         {
-          return $orig_key;
+          return $origKey;
         }
       }
     }
